@@ -35,9 +35,8 @@ services:
       - TZ=America/Phoenix
       - WEBUI_PORT=8085
     volumes:
-      - /docker/arr-stack/qbittorrent:/config
-      - /mnt/NASMedia/:/data/media
-      - /mnt/NASMedia/Torrents:/data/torrents
+      - /docker/arr-stack/qbittorrent/:/config
+      - /mnt/NASMedia/Torrents/:/data/torrents
     restart: always
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
@@ -49,8 +48,7 @@ services:
       - TZ=Etc/UTC
     volumes:
       - /docker/arr-stack/sonarr/data:/config
-      - /mnt/NASMedia/:/data/media
-      - /mnt/NASMedia/Torrents:/data/torrents
+      - /mnt/NASMedia/:/data
     restart: unless-stopped
   radarr:
     image: lscr.io/linuxserver/radarr:latest
@@ -62,8 +60,8 @@ services:
       - TZ=America/Phoenix
     volumes:
       - /docker/arr-stack/radarr/data:/config
-      - /mnt/NASMedia/:/data/media
-      - /mnt/NASMedia/Torrents:/data/torrents
+      - /mnt/NASMedia/:/data
+
     restart: unless-stopped
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
@@ -88,7 +86,7 @@ services:
     restart: unless-stopped
 
   recyclarr:
-    image: ghcr.io/recyclarr/recyclarr
+    image: ghcr.io/recyclarr/recyclarr:latest
     container_name: recyclarr
     user: 1000:1000
     network_mode: service:gluetun
