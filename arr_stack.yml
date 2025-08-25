@@ -1,120 +1,108 @@
+---
 version: "3"
 services:
   gluetun:
     image: qmcgaw/gluetun:latest
     container_name: gluetun
-    # line above must be uncommented to allow external containers to connect.
-    # See https://github.com/qdm12/gluetun-wiki/blob/main/setup/connect-a-container-to-gluetun.md#external-container-to-gluetun
+    hostname: mediagluetun
     cap_add:
       - NET_ADMIN
     devices:
       - /dev/net/tun:/dev/net/tun
     ports:
-      - 6881:6881
-      - 6881:6881/udp
-      - 8085:8085 # qbittorrent
-      - 9117:9117 # Jackett
-      - 8989:8989 # Sonarr
-      - 9696:9696 # Prowlarr
-      - 7878:7878 # Radarr
-      - 5055:5055 # Overseerr
+      - 5190:5190
+      - 5190:5190/udp
+      - 8080:8080
     volumes:
-      - /home/netrat/docker/arr-stack:/gluetun
+      - /docker/arr-stack:/gluetun
     environment:
-      # See https://github.com/qdm12/gluetun-wiki/tree/main/setup#setup
       - VPN_SERVICE_PROVIDER=mullvad
       - VPN_TYPE=wireguard
-      # OpenVPN:
-      # - OPENVPN_USER=
-      # - OPENVPN_PASSWORD=
-      # Wireguard:
-      - WIREGUARD_PRIVATE_KEY=MG4gpbUdlMbKorP/Fn/1PABp0bT1d6Vey6k3hDlwNkc= # See https://github.com/qdm12/gluetun-wiki/blob/main/setup/providers/nordvpn.md#obtain-your-wireguard-private-key
-      - WIREGUARD_ADDRESSES=10.66.24.46/32
-      # Timezone for accurate log times
+      - WIREGUARD_PRIVATE_KEY=EN0j9FEaHaFC8C0UWAJZnqL51dNReGWH5Rb5DHLkVGU=
+      - WIREGUARD_ADDRESSES=10.68.205.180/32
       - TZ=America/Phoenix
-      # Server list updater
-      # See https://github.com/qdm12/gluetun-wiki/blob/main/setup/servers.md#update-the-vpn-servers-list
       - UPDATER_PERIOD=24h
 
+    restart: unless-stopped
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
-    network_mode: "service:gluetun"
+    network_mode: service:gluetun
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=America/Phoenix
-      - WEBUI_PORT=8085
+      - WEBUI_PORT=8080
     volumes:
-      - /home/netrat/docker/arr-stack/qbittorrent:/config
-      - /media/netrat/PNY1/qbittorrent/downloads:/downloads
-    depends_on:
-      - gluetun
-    restart: always
-
-  # jackett:
-  # image: lscr.io/linuxserver/jackett:latest
-  #  container_name: jackett
-  #  network_mode: "service:gluetun"
-  #  environment:
-  #    - PUID=1000
-  #    - PGID=1000
-  #   - TZ=Etc/UTC
-  #    - AUTO_UPDATE=true #optional
-  #    - RUN_OPTS= #optional
-  #  volumes:
-  #    - /home/ubuntu/docker/arr-stack/jackett/data:/config
-  #    - /home/ubuntu/docker/arr-stack/jackett/blackhole:/downloads
-  #  restart: unless-stopped
-
+      - /docker/arr-stack/qbittorrent/:/config
+      - /mnt/NASMedia/Torrents/:/data/torrents
+    restart: unless-stopped
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
     container_name: sonarr
-    network_mode: "service:gluetun"
+    ports:
+      - 8989:8989
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Etc/UTC
     volumes:
-      - /home/netrat/docker/arr-stack/sonarr/data:/config
-      - /media/netrat/TV\ Shows/:/tv #optional
-      - /media/netrat/PNY/qbittorrent/downloads:/downloads #optional
+      - /docker/arr-stack/sonarr/data:/config
+      - /mnt/NASMedia/:/data
     restart: unless-stopped
-
   radarr:
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
-    network_mode: "service:gluetun"
+    ports:
+      - 7878:7878
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=America/Phoenix
     volumes:
-      - /home/netrat/docker/arr-stack/radarr/data:/config
-      - /media/netrat/Movies:/movies #optional
-      - /media/netrat/PNY/qbittorrent/downloads:/downloads #optional
+      - /docker/arr-stack/radarr/data:/config
+      - /mnt/NASMedia/:/data
     restart: unless-stopped
-
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
-    network_mode: "service:gluetun"
+    ports:
+      - 9696:9696
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Etc/UTC
     volumes:
-      - /home/netrat/docker/arr-stack/prowlarr/data:/config
+      - /docker/arr-stack/prowlarr/data:/config
     restart: unless-stopped
-
   overseerr:
     image: sctx/overseerr:latest
     container_name: overseerr
-    network_mode: "service:gluetun"
+    ports:
+      - 5055:5055
     environment:
       - LOG_LEVEL=debug
       - TZ=America/Phoenix
-      - PORT=5055 #optional
     volumes:
-      - /home/netrat/docker/arr-stack/overseerr:/app/config
+      - /docker/arr-stack/overseerr:/app/config
     restart: unless-stopped
+  unpackerr:
+    image: golift/unpackerr
+    container_name: unpackerr
+    volumes:
+      - /mnt/NASMedia/:/data/
+      - /docker/arr-stack/unpackerr/:/config
+    restart: unless-stopped
+    user: 1000:1000
+
+  notifiarr:
+    container_name: notifiarr
+    hostname: notifiarr
+    image: golift/notifiarr
+    restart: unless-stopped
+    ports:
+      - "5454:5454"
+    volumes:
+      - /docker/notifiarr:/config
+      - /var/run/utmp:/var/run/utmp
+      - /etc/machine-id:/etc/machine-id
