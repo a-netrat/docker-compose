@@ -21,7 +21,7 @@ services:
     environment:
       - VPN_SERVICE_PROVIDER=mullvad
       - VPN_TYPE=wireguard
-      - WIREGUARD_PRIVATE_KEY=MG4gpbUdlMbKorP/Fn/1PABp0bT1d6Vey6k3hDlwNkc=
+      - WIREGUARD_PRIVATE_KEY=
       - WIREGUARD_ADDRESSES=10.66.24.46/32
       - TZ=America/Phoenix
       - UPDATER_PERIOD=24h
